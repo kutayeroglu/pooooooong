@@ -16,13 +16,21 @@ A classic Pong game implemented in Python using pygame. Play against an AI oppon
 python pong.py
 ```
 
+## Start Menu
+
+When the game starts, you'll see a menu where you can configure:
+- **Game Speed**: Use **↑/↓** to adjust (0.5x to 3.0x)
+- **AI Difficulty**: Press **A** to cycle through Easy → Medium → Hard
+- Press **ENTER** to start the game
+
 ## Controls
 
 - **Mouse** - Move paddle (follows mouse Y position)
 - **W** or **↑** - Move paddle up (keyboard alternative)
 - **S** or **↓** - Move paddle down (keyboard alternative)
 - **ESC** - Pause/Unpause game
-- **↑/↓** or **+/-** - Adjust game speed (when paused)
+- **↑/↓** - Adjust game speed (when paused)
+- **A** - Cycle AI difficulty: Easy → Medium → Hard (when paused)
 - Close window to quit
 
 ## Gameplay

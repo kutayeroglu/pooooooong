@@ -60,39 +60,59 @@ class Paddle:
 
 
 class AIPaddle:
-    def __init__(self, x, y, speed_multiplier=1.0):
+    def __init__(self, x, y, speed_multiplier=1.0, difficulty="medium"):
         self.rect = pygame.Rect(x, y, PADDLE_WIDTH, PADDLE_HEIGHT)
         self.base_speed = PADDLE_SPEED
         self.speed_multiplier = speed_multiplier
         self.speed = self.base_speed * self.speed_multiplier
-        self.reaction_delay = 0.3  # AI reaction delay for challenge
+        self.difficulty = difficulty
+        self.set_difficulty(difficulty)
+
+    def set_difficulty(self, difficulty):
+        """Set AI difficulty level"""
+        self.difficulty = difficulty
+        if difficulty == "easy":
+            self.imperfection_range = 40  # More error
+            self.reaction_threshold = 20  # Slower reaction
+            self.speed_factor = 0.7  # Slower movement
+        elif difficulty == "medium":
+            self.imperfection_range = 20  # Moderate error
+            self.reaction_threshold = 10  # Normal reaction
+            self.speed_factor = 1.0  # Normal speed
+        else:  # hard
+            self.imperfection_range = 5  # Minimal error
+            self.reaction_threshold = 5  # Fast reaction
+            self.speed_factor = 1.2  # Faster movement
 
     def update_speed(self, multiplier):
         """Update speed based on multiplier"""
         self.speed_multiplier = multiplier
-        self.speed = self.base_speed * self.speed_multiplier
+        self.speed = self.base_speed * self.speed_multiplier * self.speed_factor
 
     def update(self, ball):
-        """AI tracks the ball with slight delay"""
+        """AI tracks the ball with difficulty-based behavior"""
         # Predict ball position
         if ball.velocity_x > 0:  # Ball moving towards AI
             target_y = ball.rect.centery
-            # Add some imperfection
-            target_y += random.randint(-20, 20)
+            # Add imperfection based on difficulty
+            target_y += random.randint(
+                -self.imperfection_range, self.imperfection_range
+            )
 
-            if self.rect.centery < target_y - 10:
+            # Speed already includes speed_factor from update_speed
+            if self.rect.centery < target_y - self.reaction_threshold:
                 if self.rect.bottom < WINDOW_HEIGHT:
                     self.rect.y += self.speed
-            elif self.rect.centery > target_y + 10:
+            elif self.rect.centery > target_y + self.reaction_threshold:
                 if self.rect.top > 0:
                     self.rect.y -= self.speed
         else:
             # Move towards center when ball is moving away
             center_y = WINDOW_HEIGHT // 2
-            if self.rect.centery < center_y - 10:
+            if self.rect.centery < center_y - self.reaction_threshold:
                 if self.rect.bottom < WINDOW_HEIGHT:
                     self.rect.y += self.speed
-            elif self.rect.centery > center_y + 10:
+            elif self.rect.centery > center_y + self.reaction_threshold:
                 if self.rect.top > 0:
                     self.rect.y -= self.speed
 
@@ -168,6 +188,7 @@ class Ball:
 class Game:
     def __init__(self):
         self.speed_multiplier = 1.0
+        self.ai_difficulty = "medium"  # easy, medium, hard
         self.player_paddle = Paddle(
             50, WINDOW_HEIGHT // 2 - PADDLE_HEIGHT // 2, self.speed_multiplier
         )
@@ -175,11 +196,13 @@ class Game:
             WINDOW_WIDTH - 50 - PADDLE_WIDTH,
             WINDOW_HEIGHT // 2 - PADDLE_HEIGHT // 2,
             self.speed_multiplier,
+            self.ai_difficulty,
         )
         self.ball = Ball(self.speed_multiplier)
         self.player_score = 0
         self.ai_score = 0
         self.paused = False
+        self.game_started = False
         self.font = pygame.font.Font(None, 74)
         self.small_font = pygame.font.Font(None, 36)
         self.tiny_font = pygame.font.Font(None, 28)
@@ -207,6 +230,22 @@ class Game:
             self.ai_paddle.update_speed(self.speed_multiplier)
             self.ball.update_speed(self.speed_multiplier)
 
+    def set_ai_difficulty(self, difficulty):
+        """Set AI difficulty level"""
+        if difficulty in ("easy", "medium", "hard"):
+            self.ai_difficulty = difficulty
+            self.ai_paddle.set_difficulty(difficulty)
+            self.ai_paddle.update_speed(self.speed_multiplier)
+
+    def cycle_ai_difficulty(self):
+        """Cycle through AI difficulty levels"""
+        difficulties = ["easy", "medium", "hard"]
+        current_index = difficulties.index(self.ai_difficulty)
+        next_index = (current_index + 1) % len(difficulties)
+        self.ai_difficulty = difficulties[next_index]
+        self.ai_paddle.set_difficulty(self.ai_difficulty)
+        self.ai_paddle.update_speed(self.speed_multiplier)
+
     def update(self):
         """Update game state"""
         self.ball.update()
@@ -223,6 +262,75 @@ class Game:
             else:
                 self.player_score += 1
             self.ball.reset()
+
+    def draw_start_menu(self):
+        """Draw start menu for selecting speed and difficulty"""
+        screen.fill(BLACK)
+
+        # Draw title
+        title_text = self.font.render("PONG", True, WHITE)
+        title_rect = title_text.get_rect(center=(WINDOW_WIDTH // 2, 100))
+        screen.blit(title_text, title_rect)
+
+        # Draw background panel for settings
+        panel_width = 500
+        panel_height = 350
+        panel_x = (WINDOW_WIDTH - panel_width) // 2
+        panel_y = (WINDOW_HEIGHT - panel_height) // 2 + 50
+        panel_rect = pygame.Rect(panel_x, panel_y, panel_width, panel_height)
+        pygame.draw.rect(screen, DARK_GRAY, panel_rect)
+        pygame.draw.rect(screen, WHITE, panel_rect, 3)  # Border
+
+        # Draw speed settings
+        speed_label = self.small_font.render("Game Speed:", True, WHITE)
+        speed_label_rect = speed_label.get_rect(
+            center=(WINDOW_WIDTH // 2 - 100, WINDOW_HEIGHT // 2 - 20)
+        )
+        screen.blit(speed_label, speed_label_rect)
+
+        speed_value = self.small_font.render(
+            f"{self.speed_multiplier:.1f}x", True, WHITE
+        )
+        speed_value_rect = speed_value.get_rect(
+            center=(WINDOW_WIDTH // 2 + 80, WINDOW_HEIGHT // 2 - 20)
+        )
+        screen.blit(speed_value, speed_value_rect)
+
+        # Draw speed controls
+        speed_controls = self.tiny_font.render("UP/DOWN to adjust", True, GRAY)
+        speed_controls_rect = speed_controls.get_rect(
+            center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 10)
+        )
+        screen.blit(speed_controls, speed_controls_rect)
+
+        # Draw AI difficulty settings
+        ai_label = self.small_font.render("AI Difficulty:", True, WHITE)
+        ai_label_rect = ai_label.get_rect(
+            center=(WINDOW_WIDTH // 2 - 100, WINDOW_HEIGHT // 2 + 50)
+        )
+        screen.blit(ai_label, ai_label_rect)
+
+        ai_value = self.small_font.render(self.ai_difficulty.upper(), True, WHITE)
+        ai_value_rect = ai_value.get_rect(
+            center=(WINDOW_WIDTH // 2 + 80, WINDOW_HEIGHT // 2 + 50)
+        )
+        screen.blit(ai_value, ai_value_rect)
+
+        # Draw AI difficulty controls
+        ai_controls = self.tiny_font.render("Press A to cycle", True, GRAY)
+        ai_controls_rect = ai_controls.get_rect(
+            center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 80)
+        )
+        screen.blit(ai_controls, ai_controls_rect)
+
+        # Draw start instruction
+        start_text = self.small_font.render("Press ENTER to start", True, WHITE)
+        start_rect = start_text.get_rect(
+            center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 130)
+        )
+        screen.blit(start_text, start_rect)
+
+        pygame.display.flip()
 
     def draw(self):
         """Draw game elements"""
@@ -253,7 +361,7 @@ class Game:
 
             # Draw background panel for settings
             panel_width = 450
-            panel_height = 250
+            panel_height = 320
             panel_x = (WINDOW_WIDTH - panel_width) // 2
             panel_y = (WINDOW_HEIGHT - panel_height) // 2
             panel_rect = pygame.Rect(panel_x, panel_y, panel_width, panel_height)
@@ -263,14 +371,14 @@ class Game:
             # Draw pause text
             pause_text = self.font.render("PAUSED", True, WHITE)
             pause_rect = pause_text.get_rect(
-                center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 70)
+                center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 100)
             )
             screen.blit(pause_text, pause_rect)
 
             # Draw speed settings
             speed_label = self.small_font.render("Game Speed:", True, WHITE)
             speed_label_rect = speed_label.get_rect(
-                center=(WINDOW_WIDTH // 2 - 80, WINDOW_HEIGHT // 2 - 10)
+                center=(WINDOW_WIDTH // 2 - 80, WINDOW_HEIGHT // 2 - 40)
             )
             screen.blit(speed_label, speed_label_rect)
 
@@ -278,21 +386,41 @@ class Game:
                 f"{self.speed_multiplier:.1f}x", True, WHITE
             )
             speed_value_rect = speed_value.get_rect(
-                center=(WINDOW_WIDTH // 2 + 50, WINDOW_HEIGHT // 2 - 10)
+                center=(WINDOW_WIDTH // 2 + 50, WINDOW_HEIGHT // 2 - 40)
             )
             screen.blit(speed_value, speed_value_rect)
 
             # Draw speed controls
-            speed_controls = self.tiny_font.render("↑/↓ or +/- to adjust", True, GRAY)
+            speed_controls = self.tiny_font.render("UP/DOWN to adjust", True, GRAY)
             speed_controls_rect = speed_controls.get_rect(
-                center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 20)
+                center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 10)
             )
             screen.blit(speed_controls, speed_controls_rect)
+
+            # Draw AI difficulty settings
+            ai_label = self.small_font.render("AI Difficulty:", True, WHITE)
+            ai_label_rect = ai_label.get_rect(
+                center=(WINDOW_WIDTH // 2 - 80, WINDOW_HEIGHT // 2 + 30)
+            )
+            screen.blit(ai_label, ai_label_rect)
+
+            ai_value = self.small_font.render(self.ai_difficulty.upper(), True, WHITE)
+            ai_value_rect = ai_value.get_rect(
+                center=(WINDOW_WIDTH // 2 + 50, WINDOW_HEIGHT // 2 + 30)
+            )
+            screen.blit(ai_value, ai_value_rect)
+
+            # Draw AI difficulty controls
+            ai_controls = self.tiny_font.render("Press A to cycle", True, GRAY)
+            ai_controls_rect = ai_controls.get_rect(
+                center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 60)
+            )
+            screen.blit(ai_controls, ai_controls_rect)
 
             # Draw resume instruction
             resume_text = self.small_font.render("Press ESC to resume", True, GRAY)
             resume_rect = resume_text.get_rect(
-                center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 70)
+                center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 110)
             )
             screen.blit(resume_text, resume_rect)
 
@@ -306,27 +434,39 @@ class Game:
                 if event.type == pygame.QUIT:
                     running = False
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
-                        self.paused = not self.paused
-                    elif self.paused:
-                        # Speed adjustment controls when paused
-                        if event.key in (
-                            pygame.K_UP,
-                            pygame.K_EQUALS,
-                            pygame.K_KP_PLUS,
+                    if not self.game_started:
+                        # Start menu controls
+                        if (
+                            event.key == pygame.K_RETURN
+                            or event.key == pygame.K_KP_ENTER
                         ):
+                            self.game_started = True
+                        elif event.key == pygame.K_UP:
                             self.adjust_speed(0.1)
-                        elif event.key in (
-                            pygame.K_DOWN,
-                            pygame.K_MINUS,
-                            pygame.K_KP_MINUS,
-                        ):
+                        elif event.key == pygame.K_DOWN:
                             self.adjust_speed(-0.1)
+                        elif event.key == pygame.K_a:
+                            self.cycle_ai_difficulty()
+                    else:
+                        # Game controls
+                        if event.key == pygame.K_ESCAPE:
+                            self.paused = not self.paused
+                        elif self.paused:
+                            # Speed adjustment controls when paused
+                            if event.key == pygame.K_UP:
+                                self.adjust_speed(0.1)
+                            elif event.key == pygame.K_DOWN:
+                                self.adjust_speed(-0.1)
+                            elif event.key == pygame.K_a:
+                                self.cycle_ai_difficulty()
 
-            self.handle_input()
-            if not self.paused:
-                self.update()
-            self.draw()
+            if self.game_started:
+                self.handle_input()
+                if not self.paused:
+                    self.update()
+                self.draw()
+            else:
+                self.draw_start_menu()
             clock.tick(60)  # 60 FPS
 
         pygame.quit()
