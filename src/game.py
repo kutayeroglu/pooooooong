@@ -39,18 +39,11 @@ class Game:
         self.tiny_font = pygame.font.Font(None, 28)
 
     def handle_input(self):
-        """Handle keyboard and mouse input"""
+        """Handle mouse input"""
         if not self.paused:
             # Mouse control - paddle follows mouse Y position
             mouse_y = pygame.mouse.get_pos()[1]
             self.player_paddle.set_position(mouse_y)
-
-            # Keyboard control (still works as alternative)
-            keys = pygame.key.get_pressed()
-            if keys[pygame.K_w] or keys[pygame.K_UP]:
-                self.player_paddle.move(-1)
-            if keys[pygame.K_s] or keys[pygame.K_DOWN]:
-                self.player_paddle.move(1)
 
     def adjust_speed(self, delta):
         """Adjust game speed multiplier"""
@@ -282,7 +275,10 @@ class Game:
                         # Game controls
                         if event.key == pygame.K_ESCAPE:
                             self.paused = True
-                        elif event.key == pygame.K_RETURN or event.key == pygame.K_KP_ENTER:
+                        elif (
+                            event.key == pygame.K_RETURN
+                            or event.key == pygame.K_KP_ENTER
+                        ):
                             if self.paused:
                                 self.paused = False
                         elif self.paused:
@@ -304,4 +300,3 @@ class Game:
             clock.tick(60)  # 60 FPS
 
         pygame.quit()
-
