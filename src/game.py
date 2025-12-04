@@ -249,7 +249,7 @@ class Game:
             screen.blit(ai_controls, ai_controls_rect)
 
             # Draw resume instruction
-            resume_text = self.small_font.render("Press ESC to resume", True, GRAY)
+            resume_text = self.small_font.render("Press ENTER to resume", True, GRAY)
             resume_rect = resume_text.get_rect(
                 center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 110)
             )
@@ -281,7 +281,10 @@ class Game:
                     else:
                         # Game controls
                         if event.key == pygame.K_ESCAPE:
-                            self.paused = not self.paused
+                            self.paused = True
+                        elif event.key == pygame.K_RETURN or event.key == pygame.K_KP_ENTER:
+                            if self.paused:
+                                self.paused = False
                         elif self.paused:
                             # Speed adjustment controls when paused
                             if event.key == pygame.K_UP:
