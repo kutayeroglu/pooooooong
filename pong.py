@@ -36,6 +36,16 @@ class Paddle:
         elif direction == 1 and self.rect.bottom < WINDOW_HEIGHT:
             self.rect.y += self.speed
 
+    def set_position(self, y):
+        """Set paddle position based on Y coordinate (centered on Y)"""
+        # Center paddle on Y coordinate
+        self.rect.centery = y
+        # Keep paddle within bounds
+        if self.rect.top < 0:
+            self.rect.top = 0
+        elif self.rect.bottom > WINDOW_HEIGHT:
+            self.rect.bottom = WINDOW_HEIGHT
+
     def draw(self, surface):
         pygame.draw.rect(surface, WHITE, self.rect)
 
@@ -138,8 +148,13 @@ class Game:
         self.small_font = pygame.font.Font(None, 36)
 
     def handle_input(self):
-        """Handle keyboard input"""
+        """Handle keyboard and mouse input"""
         if not self.paused:
+            # Mouse control - paddle follows mouse Y position
+            mouse_y = pygame.mouse.get_pos()[1]
+            self.player_paddle.set_position(mouse_y)
+            
+            # Keyboard control (still works as alternative)
             keys = pygame.key.get_pressed()
             if keys[pygame.K_w] or keys[pygame.K_UP]:
                 self.player_paddle.move(-1)

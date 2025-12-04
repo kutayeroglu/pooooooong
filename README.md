@@ -18,8 +18,9 @@ python pong.py
 
 ## Controls
 
-- **W** or **↑** - Move paddle up
-- **S** or **↓** - Move paddle down
+- **Mouse** - Move paddle (follows mouse Y position)
+- **W** or **↑** - Move paddle up (keyboard alternative)
+- **S** or **↓** - Move paddle down (keyboard alternative)
 - **SPACE** or **P** - Pause/Unpause game
 - **ESC** - Quit game
 
