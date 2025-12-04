@@ -27,9 +27,16 @@ clock = pygame.time.Clock()
 
 
 class Paddle:
-    def __init__(self, x, y):
+    def __init__(self, x, y, speed_multiplier=1.0):
         self.rect = pygame.Rect(x, y, PADDLE_WIDTH, PADDLE_HEIGHT)
-        self.speed = PADDLE_SPEED
+        self.base_speed = PADDLE_SPEED
+        self.speed_multiplier = speed_multiplier
+        self.speed = self.base_speed * self.speed_multiplier
+
+    def update_speed(self, multiplier):
+        """Update speed based on multiplier"""
+        self.speed_multiplier = multiplier
+        self.speed = self.base_speed * self.speed_multiplier
 
     def move(self, direction):
         """Move paddle up (-1) or down (1)"""
@@ -53,10 +60,17 @@ class Paddle:
 
 
 class AIPaddle:
-    def __init__(self, x, y):
+    def __init__(self, x, y, speed_multiplier=1.0):
         self.rect = pygame.Rect(x, y, PADDLE_WIDTH, PADDLE_HEIGHT)
-        self.speed = PADDLE_SPEED
+        self.base_speed = PADDLE_SPEED
+        self.speed_multiplier = speed_multiplier
+        self.speed = self.base_speed * self.speed_multiplier
         self.reaction_delay = 0.3  # AI reaction delay for challenge
+
+    def update_speed(self, multiplier):
+        """Update speed based on multiplier"""
+        self.speed_multiplier = multiplier
+        self.speed = self.base_speed * self.speed_multiplier
 
     def update(self, ball):
         """AI tracks the ball with slight delay"""
@@ -87,8 +101,19 @@ class AIPaddle:
 
 
 class Ball:
-    def __init__(self):
+    def __init__(self, speed_multiplier=1.0):
+        self.speed_multiplier = speed_multiplier
         self.reset()
+
+    def update_speed(self, multiplier):
+        """Update speed multiplier and recalculate velocities"""
+        self.speed_multiplier = multiplier
+        # Adjust current velocities to maintain direction but scale speed
+        current_speed = (self.velocity_x**2 + self.velocity_y**2) ** 0.5
+        if current_speed > 0:
+            scale = (BALL_SPEED * self.speed_multiplier) / current_speed
+            self.velocity_x = int(self.velocity_x * scale)
+            self.velocity_y = int(self.velocity_y * scale)
 
     def reset(self):
         """Reset ball to center with random direction"""
@@ -99,8 +124,9 @@ class Ball:
             BALL_SIZE,
         )
         # Random initial direction
-        self.velocity_x = BALL_SPEED * random.choice([-1, 1])
-        self.velocity_y = BALL_SPEED * random.choice([-1, 1])
+        base_velocity = BALL_SPEED * self.speed_multiplier
+        self.velocity_x = int(base_velocity * random.choice([-1, 1]))
+        self.velocity_y = int(base_velocity * random.choice([-1, 1]))
 
     def update(self):
         """Update ball position"""
@@ -120,8 +146,9 @@ class Ball:
             hit_pos = (self.rect.centery - paddle.rect.centery) / (PADDLE_HEIGHT // 2)
             self.velocity_y += hit_pos * 2
             # Keep speed reasonable
-            if abs(self.velocity_y) > BALL_SPEED * 2:
-                self.velocity_y = BALL_SPEED * 2 * (1 if self.velocity_y > 0 else -1)
+            max_velocity = BALL_SPEED * self.speed_multiplier * 2
+            if abs(self.velocity_y) > max_velocity:
+                self.velocity_y = int(max_velocity * (1 if self.velocity_y > 0 else -1))
             # Move ball away from paddle to prevent sticking
             if self.velocity_x > 0:
                 self.rect.left = paddle.rect.right
@@ -140,16 +167,22 @@ class Ball:
 
 class Game:
     def __init__(self):
-        self.player_paddle = Paddle(50, WINDOW_HEIGHT // 2 - PADDLE_HEIGHT // 2)
-        self.ai_paddle = AIPaddle(
-            WINDOW_WIDTH - 50 - PADDLE_WIDTH, WINDOW_HEIGHT // 2 - PADDLE_HEIGHT // 2
+        self.speed_multiplier = 1.0
+        self.player_paddle = Paddle(
+            50, WINDOW_HEIGHT // 2 - PADDLE_HEIGHT // 2, self.speed_multiplier
         )
-        self.ball = Ball()
+        self.ai_paddle = AIPaddle(
+            WINDOW_WIDTH - 50 - PADDLE_WIDTH,
+            WINDOW_HEIGHT // 2 - PADDLE_HEIGHT // 2,
+            self.speed_multiplier,
+        )
+        self.ball = Ball(self.speed_multiplier)
         self.player_score = 0
         self.ai_score = 0
         self.paused = False
         self.font = pygame.font.Font(None, 74)
         self.small_font = pygame.font.Font(None, 36)
+        self.tiny_font = pygame.font.Font(None, 28)
 
     def handle_input(self):
         """Handle keyboard and mouse input"""
@@ -164,6 +197,15 @@ class Game:
                 self.player_paddle.move(-1)
             if keys[pygame.K_s] or keys[pygame.K_DOWN]:
                 self.player_paddle.move(1)
+
+    def adjust_speed(self, delta):
+        """Adjust game speed multiplier"""
+        new_multiplier = max(0.5, min(3.0, self.speed_multiplier + delta))
+        if new_multiplier != self.speed_multiplier:
+            self.speed_multiplier = new_multiplier
+            self.player_paddle.update_speed(self.speed_multiplier)
+            self.ai_paddle.update_speed(self.speed_multiplier)
+            self.ball.update_speed(self.speed_multiplier)
 
     def update(self):
         """Update game state"""
@@ -209,9 +251,9 @@ class Game:
             overlay.fill(BLACK)
             screen.blit(overlay, (0, 0))
 
-            # Draw background panel for text
-            panel_width = 400
-            panel_height = 150
+            # Draw background panel for settings
+            panel_width = 450
+            panel_height = 250
             panel_x = (WINDOW_WIDTH - panel_width) // 2
             panel_y = (WINDOW_HEIGHT - panel_height) // 2
             panel_rect = pygame.Rect(panel_x, panel_y, panel_width, panel_height)
@@ -221,16 +263,36 @@ class Game:
             # Draw pause text
             pause_text = self.font.render("PAUSED", True, WHITE)
             pause_rect = pause_text.get_rect(
-                center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 20)
+                center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 70)
             )
             screen.blit(pause_text, pause_rect)
 
-            # Draw resume instruction
-            resume_text = self.small_font.render(
-                "Press SPACE or P to resume", True, GRAY
+            # Draw speed settings
+            speed_label = self.small_font.render("Game Speed:", True, WHITE)
+            speed_label_rect = speed_label.get_rect(
+                center=(WINDOW_WIDTH // 2 - 80, WINDOW_HEIGHT // 2 - 10)
             )
+            screen.blit(speed_label, speed_label_rect)
+
+            speed_value = self.small_font.render(
+                f"{self.speed_multiplier:.1f}x", True, WHITE
+            )
+            speed_value_rect = speed_value.get_rect(
+                center=(WINDOW_WIDTH // 2 + 50, WINDOW_HEIGHT // 2 - 10)
+            )
+            screen.blit(speed_value, speed_value_rect)
+
+            # Draw speed controls
+            speed_controls = self.tiny_font.render("↑/↓ or +/- to adjust", True, GRAY)
+            speed_controls_rect = speed_controls.get_rect(
+                center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 20)
+            )
+            screen.blit(speed_controls, speed_controls_rect)
+
+            # Draw resume instruction
+            resume_text = self.small_font.render("Press ESC to resume", True, GRAY)
             resume_rect = resume_text.get_rect(
-                center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 40)
+                center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 70)
             )
             screen.blit(resume_text, resume_rect)
 
@@ -245,9 +307,21 @@ class Game:
                     running = False
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
-                        running = False
-                    elif event.key == pygame.K_SPACE or event.key == pygame.K_p:
                         self.paused = not self.paused
+                    elif self.paused:
+                        # Speed adjustment controls when paused
+                        if event.key in (
+                            pygame.K_UP,
+                            pygame.K_EQUALS,
+                            pygame.K_KP_PLUS,
+                        ):
+                            self.adjust_speed(0.1)
+                        elif event.key in (
+                            pygame.K_DOWN,
+                            pygame.K_MINUS,
+                            pygame.K_KP_MINUS,
+                        ):
+                            self.adjust_speed(-0.1)
 
             self.handle_input()
             if not self.paused:
