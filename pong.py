@@ -17,6 +17,8 @@ BALL_SPEED = 5
 # Colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
+GRAY = (128, 128, 128)
+DARK_GRAY = (40, 40, 40)
 
 # Create the game window
 screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
@@ -63,7 +65,7 @@ class AIPaddle:
             target_y = ball.rect.centery
             # Add some imperfection
             target_y += random.randint(-20, 20)
-            
+
             if self.rect.centery < target_y - 10:
                 if self.rect.bottom < WINDOW_HEIGHT:
                     self.rect.y += self.speed
@@ -94,7 +96,7 @@ class Ball:
             WINDOW_WIDTH // 2 - BALL_SIZE // 2,
             WINDOW_HEIGHT // 2 - BALL_SIZE // 2,
             BALL_SIZE,
-            BALL_SIZE
+            BALL_SIZE,
         )
         # Random initial direction
         self.velocity_x = BALL_SPEED * random.choice([-1, 1])
@@ -139,7 +141,9 @@ class Ball:
 class Game:
     def __init__(self):
         self.player_paddle = Paddle(50, WINDOW_HEIGHT // 2 - PADDLE_HEIGHT // 2)
-        self.ai_paddle = AIPaddle(WINDOW_WIDTH - 50 - PADDLE_WIDTH, WINDOW_HEIGHT // 2 - PADDLE_HEIGHT // 2)
+        self.ai_paddle = AIPaddle(
+            WINDOW_WIDTH - 50 - PADDLE_WIDTH, WINDOW_HEIGHT // 2 - PADDLE_HEIGHT // 2
+        )
         self.ball = Ball()
         self.player_score = 0
         self.ai_score = 0
@@ -153,7 +157,7 @@ class Game:
             # Mouse control - paddle follows mouse Y position
             mouse_y = pygame.mouse.get_pos()[1]
             self.player_paddle.set_position(mouse_y)
-            
+
             # Keyboard control (still works as alternative)
             keys = pygame.key.get_pressed()
             if keys[pygame.K_w] or keys[pygame.K_UP]:
@@ -181,31 +185,55 @@ class Game:
     def draw(self):
         """Draw game elements"""
         screen.fill(BLACK)
-        
+
         # Draw center line
         for y in range(0, WINDOW_HEIGHT, 20):
             pygame.draw.rect(screen, WHITE, (WINDOW_WIDTH // 2 - 5, y, 10, 10))
-        
+
         # Draw paddles and ball
         self.player_paddle.draw(screen)
         self.ai_paddle.draw(screen)
         self.ball.draw(screen)
-        
+
         # Draw scores
         player_text = self.font.render(str(self.player_score), True, WHITE)
         ai_text = self.font.render(str(self.ai_score), True, WHITE)
         screen.blit(player_text, (WINDOW_WIDTH // 4, 50))
         screen.blit(ai_text, (3 * WINDOW_WIDTH // 4, 50))
-        
+
         # Draw pause message if paused
         if self.paused:
+            # Draw semi-transparent overlay
+            overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
+            overlay.set_alpha(180)  # Semi-transparent
+            overlay.fill(BLACK)
+            screen.blit(overlay, (0, 0))
+
+            # Draw background panel for text
+            panel_width = 400
+            panel_height = 150
+            panel_x = (WINDOW_WIDTH - panel_width) // 2
+            panel_y = (WINDOW_HEIGHT - panel_height) // 2
+            panel_rect = pygame.Rect(panel_x, panel_y, panel_width, panel_height)
+            pygame.draw.rect(screen, DARK_GRAY, panel_rect)
+            pygame.draw.rect(screen, WHITE, panel_rect, 3)  # Border
+
+            # Draw pause text
             pause_text = self.font.render("PAUSED", True, WHITE)
-            pause_rect = pause_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
+            pause_rect = pause_text.get_rect(
+                center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 20)
+            )
             screen.blit(pause_text, pause_rect)
-            resume_text = self.small_font.render("Press SPACE or P to resume", True, WHITE)
-            resume_rect = resume_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 50))
+
+            # Draw resume instruction
+            resume_text = self.small_font.render(
+                "Press SPACE or P to resume", True, GRAY
+            )
+            resume_rect = resume_text.get_rect(
+                center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 40)
+            )
             screen.blit(resume_text, resume_rect)
-        
+
         pygame.display.flip()
 
     def run(self):
@@ -238,4 +266,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
