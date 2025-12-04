@@ -34,6 +34,8 @@ class Game:
         self.ai_score = 0
         self.paused = False
         self.game_started = False
+        self.last_esc_press_time = 0
+        self.esc_double_press_threshold = 500  # milliseconds
         self.font = pygame.font.Font(None, 74)
         self.small_font = pygame.font.Font(None, 36)
         self.tiny_font = pygame.font.Font(None, 28)
@@ -185,7 +187,7 @@ class Game:
 
             # Draw background panel for settings
             panel_width = 450
-            panel_height = 320
+            panel_height = 340
             panel_x = (WINDOW_WIDTH - panel_width) // 2
             panel_y = (WINDOW_HEIGHT - panel_height) // 2
             panel_rect = pygame.Rect(panel_x, panel_y, panel_width, panel_height)
@@ -244,9 +246,18 @@ class Game:
             # Draw resume instruction
             resume_text = self.small_font.render("Press ENTER to resume", True, GRAY)
             resume_rect = resume_text.get_rect(
-                center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 110)
+                center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 90)
             )
             screen.blit(resume_text, resume_rect)
+
+            # Draw exit instruction
+            exit_text = self.tiny_font.render(
+                "Double-press ESC to exit", True, GRAY
+            )
+            exit_rect = exit_text.get_rect(
+                center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 120)
+            )
+            screen.blit(exit_text, exit_rect)
 
         pygame.display.flip()
 
@@ -274,7 +285,23 @@ class Game:
                     else:
                         # Game controls
                         if event.key == pygame.K_ESCAPE:
-                            self.paused = True
+                            if self.paused:
+                                # Check for double-press to exit
+                                current_time = pygame.time.get_ticks()
+                                time_since_last_press = (
+                                    current_time - self.last_esc_press_time
+                                )
+                                if (
+                                    self.last_esc_press_time > 0
+                                    and time_since_last_press < self.esc_double_press_threshold
+                                ):
+                                    running = False
+                                else:
+                                    # Single press just updates timer, doesn't resume
+                                    self.last_esc_press_time = current_time
+                            else:
+                                self.paused = True
+                                self.last_esc_press_time = 0  # Reset when pausing
                         elif (
                             event.key == pygame.K_RETURN
                             or event.key == pygame.K_KP_ENTER
