@@ -1,6 +1,6 @@
 import pygame
 import random
-from constants import (
+from .constants import (
     WINDOW_WIDTH,
     WINDOW_HEIGHT,
     BALL_SIZE,

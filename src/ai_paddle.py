@@ -1,6 +1,6 @@
 import pygame
 import random
-from constants import PADDLE_WIDTH, PADDLE_HEIGHT, PADDLE_SPEED, WINDOW_HEIGHT, WHITE
+from .constants import PADDLE_WIDTH, PADDLE_HEIGHT, PADDLE_SPEED, WINDOW_HEIGHT, WHITE
 
 
 class AIPaddle:

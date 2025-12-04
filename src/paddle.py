@@ -1,5 +1,5 @@
 import pygame
-from constants import PADDLE_WIDTH, PADDLE_HEIGHT, PADDLE_SPEED, WINDOW_HEIGHT, WHITE
+from .constants import PADDLE_WIDTH, PADDLE_HEIGHT, PADDLE_SPEED, WINDOW_HEIGHT, WHITE
 
 
 class Paddle:

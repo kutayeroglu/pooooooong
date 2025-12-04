@@ -13,7 +13,7 @@ A classic Pong game implemented in Python using pygame. Play against an AI oppon
 ## How to Run
 
 ```bash
-python src/pong.py
+python pong.py
 ```
 
 ## Start Menu

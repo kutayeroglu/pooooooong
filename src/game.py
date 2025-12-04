@@ -1,5 +1,5 @@
 import pygame
-from constants import (
+from .constants import (
     WINDOW_WIDTH,
     WINDOW_HEIGHT,
     PADDLE_HEIGHT,
@@ -11,9 +11,9 @@ from constants import (
     GRAY,
     DARK_GRAY,
 )
-from paddle import Paddle
-from ai_paddle import AIPaddle
-from ball import Ball
+from .paddle import Paddle
+from .ai_paddle import AIPaddle
+from .ball import Ball
 
 
 class Game:

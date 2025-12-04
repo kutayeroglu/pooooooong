@@ -1,5 +1,5 @@
 import sys
-from game import Game
+from src.game import Game
 
 
 def main():
@@ -10,3 +10,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
