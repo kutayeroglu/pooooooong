@@ -26,16 +26,14 @@ When the game starts, you'll see a menu where you can configure:
 ## Controls
 
 - **Mouse** - Move paddle (follows mouse Y position)
-- **W** or **↑** - Move paddle up (keyboard alternative)
-- **S** or **↓** - Move paddle down (keyboard alternative)
-- **ESC** - Pause/Unpause game
+- **ESC** - Pause/Unpause game (double-press to exit)
 - **↑/↓** - Adjust game speed (when paused)
 - **A** - Cycle AI difficulty: Easy → Medium → Hard (when paused)
 - Close window to quit
 
 ## Gameplay
 
-- Control the left paddle with your keyboard
+- Control the left paddle with your mouse
 - The AI controls the right paddle
 - Score by getting the ball past your opponent's paddle
 - First to score wins! (No score limit - play as long as you want)
