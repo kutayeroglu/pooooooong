@@ -90,6 +90,8 @@ class Game:
                 self.ai_score += 1
             else:
                 self.player_score += 1
+            # Play goal scored sound
+            self.sound_manager.play_goal_scored()
             self.ball.reset()
 
     def draw_start_menu(self):

@@ -11,9 +11,10 @@ class SoundManager:
         self.sounds = {}
         self.enabled = True
 
-        # Initialize pygame mixer
+        # Initialize pygame mixer (if not already initialized)
         try:
-            pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=512)
+            if not pygame.mixer.get_init():
+                pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=512)
         except pygame.error:
             print("Warning: Could not initialize sound system. Sound effects disabled.")
             self.enabled = False
@@ -33,6 +34,7 @@ class SoundManager:
         # Load sound files
         self._load_sound("wall_hit", os.path.join(assets_dir, "wall_hit.wav"))
         self._load_sound("paddle_hit", os.path.join(assets_dir, "paddle_hit.wav"))
+        self._load_sound("goal_scored", os.path.join(assets_dir, "goal_scored.wav"))
 
     def _load_sound(self, name, filepath):
         """Load a sound file"""
@@ -61,3 +63,18 @@ class SoundManager:
                 self.sounds["paddle_hit"].play()
             except pygame.error:
                 pass  # Silently fail if sound can't play
+
+    def play_goal_scored(self):
+        """Play sound when a goal is scored"""
+        if not self.enabled:
+            return
+        sound = self.sounds.get("goal_scored")
+        if sound:
+            try:
+                # Use a dedicated channel for goal sound to ensure it plays
+                channel = pygame.mixer.Channel(0)
+                channel.play(sound)
+            except pygame.error as e:
+                print(f"Warning: Could not play goal scored sound: {e}")
+        else:
+            print("Warning: Goal scored sound not loaded")
