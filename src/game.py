@@ -14,12 +14,15 @@ from .constants import (
 from .paddle import Paddle
 from .ai_paddle import AIPaddle
 from .ball import Ball
+from .sounds import SoundManager
 
 
 class Game:
     def __init__(self):
         self.speed_multiplier = 1.0
         self.ai_difficulty = "medium"  # easy, medium, hard
+        # Initialize sound manager
+        self.sound_manager = SoundManager()
         self.player_paddle = Paddle(
             50, WINDOW_HEIGHT // 2 - PADDLE_HEIGHT // 2, self.speed_multiplier
         )
@@ -29,7 +32,7 @@ class Game:
             self.speed_multiplier,
             self.ai_difficulty,
         )
-        self.ball = Ball(self.speed_multiplier)
+        self.ball = Ball(self.speed_multiplier, self.sound_manager)
         self.player_score = 0
         self.ai_score = 0
         self.paused = False

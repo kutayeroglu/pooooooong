@@ -11,8 +11,9 @@ from .constants import (
 
 
 class Ball:
-    def __init__(self, speed_multiplier=1.0):
+    def __init__(self, speed_multiplier=1.0, sound_manager=None):
         self.speed_multiplier = speed_multiplier
+        self.sound_manager = sound_manager
         self.reset()
 
     def update_speed(self, multiplier):
@@ -46,6 +47,9 @@ class Ball:
         # Bounce off top and bottom walls
         if self.rect.top <= 0 or self.rect.bottom >= WINDOW_HEIGHT:
             self.velocity_y = -self.velocity_y
+            # Play wall hit sound
+            if self.sound_manager:
+                self.sound_manager.play_wall_hit()
 
     def check_collision(self, paddle):
         """Check collision with paddle and reverse direction"""
@@ -66,6 +70,9 @@ class Ball:
                 self.rect.left = paddle.rect.right
             else:
                 self.rect.right = paddle.rect.left
+            # Play paddle hit sound
+            if self.sound_manager:
+                self.sound_manager.play_paddle_hit()
             return True
         return False
 
