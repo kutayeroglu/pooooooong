@@ -47,6 +47,7 @@ class Game:
         self.max_score_input = ""
         self.game_over = False
         self.game_winner = None
+        self.menu_button_rect = None
 
     def handle_input(self):
         """Handle mouse input"""
@@ -79,6 +80,19 @@ class Game:
         self.ai_difficulty = difficulties[next_index]
         self.ai_paddle.set_difficulty(self.ai_difficulty)
         self.ai_paddle.update_speed(self.speed_multiplier)
+
+    def reset_to_menu(self):
+        """Reset game state and return to main menu"""
+        self.player_score = 0
+        self.ai_score = 0
+        self.paused = False
+        self.game_started = False
+        self.game_over = False
+        self.game_winner = None
+        self.ball.reset()
+        # Reset paddles to center
+        self.player_paddle.set_position(WINDOW_HEIGHT // 2)
+        self.ai_paddle.rect.centery = WINDOW_HEIGHT // 2
 
     def update(self):
         """Update game state"""
@@ -282,7 +296,7 @@ class Game:
 
             # Draw background panel for settings
             panel_width = 450
-            panel_height = 340
+            panel_height = 430  # Increased to fit menu button and instruction
             panel_x = (WINDOW_WIDTH - panel_width) // 2
             panel_y = (WINDOW_HEIGHT - panel_height) // 2
             panel_rect = pygame.Rect(panel_x, panel_y, panel_width, panel_height)
@@ -352,6 +366,50 @@ class Game:
             )
             screen.blit(exit_text, exit_rect)
 
+            # Draw return to menu instruction (keyboard shortcut)
+            menu_instruction = self.small_font.render(
+                "Press M to return to menu", True, WHITE
+            )
+            menu_instruction_rect = menu_instruction.get_rect(
+                center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 150)
+            )
+            screen.blit(menu_instruction, menu_instruction_rect)
+
+            # Draw return to menu button
+            button_width = 250
+            button_height = 40
+            button_x = (WINDOW_WIDTH - button_width) // 2
+            button_y = WINDOW_HEIGHT // 2 + 190
+            self.menu_button_rect = pygame.Rect(
+                button_x, button_y, button_width, button_height
+            )
+
+            # Check if mouse is hovering over button
+            mouse_pos = pygame.mouse.get_pos()
+            button_hovered = self.menu_button_rect.collidepoint(mouse_pos)
+
+            # Draw button with hover effect
+            button_color = WHITE if button_hovered else GRAY
+            pygame.draw.rect(screen, button_color, self.menu_button_rect)
+            pygame.draw.rect(screen, WHITE, self.menu_button_rect, 2)  # Border
+
+            # Draw button text (white on gray, black on white for contrast)
+            text_color = BLACK if button_hovered else WHITE
+            menu_button_text = self.small_font.render(
+                "Return to Main Menu", True, text_color
+            )
+            menu_button_text_rect = menu_button_text.get_rect(
+                center=self.menu_button_rect.center
+            )
+            screen.blit(menu_button_text, menu_button_text_rect)
+
+            # Draw click hint
+            click_hint = self.tiny_font.render("(or click button)", True, GRAY)
+            click_hint_rect = click_hint.get_rect(
+                center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 240)
+            )
+            screen.blit(click_hint, click_hint_rect)
+
         pygame.display.flip()
 
     def run(self):
@@ -361,6 +419,11 @@ class Game:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if event.button == 1:  # Left mouse button
+                        if self.paused and self.menu_button_rect:
+                            if self.menu_button_rect.collidepoint(event.pos):
+                                self.reset_to_menu()
                 if event.type == pygame.KEYDOWN:
                     if not self.game_started:
                         # Start menu controls
@@ -465,6 +528,9 @@ class Game:
                                 self.adjust_speed(-0.1)
                             elif event.key == pygame.K_a:
                                 self.cycle_ai_difficulty()
+                            elif event.key == pygame.K_m:
+                                # Return to main menu
+                                self.reset_to_menu()
 
             if self.game_started:
                 self.handle_input()
