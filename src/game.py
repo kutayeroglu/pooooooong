@@ -42,6 +42,11 @@ class Game:
         self.font = pygame.font.Font(None, 74)
         self.small_font = pygame.font.Font(None, 36)
         self.tiny_font = pygame.font.Font(None, 28)
+        # Maximum score feature
+        self.max_score = None
+        self.max_score_input = ""
+        self.game_over = False
+        self.game_winner = None
 
     def handle_input(self):
         """Handle mouse input"""
@@ -94,6 +99,15 @@ class Game:
             self.sound_manager.play_goal_scored()
             self.ball.reset()
 
+            # Check win condition
+            if self.max_score is not None:
+                if self.player_score >= self.max_score:
+                    self.game_over = True
+                    self.game_winner = "player"
+                elif self.ai_score >= self.max_score:
+                    self.game_over = True
+                    self.game_winner = "ai"
+
     def draw_start_menu(self):
         """Draw start menu for selecting speed and difficulty"""
         screen.fill(BLACK)
@@ -105,17 +119,22 @@ class Game:
 
         # Draw background panel for settings
         panel_width = 500
-        panel_height = 350
+        panel_height = 420
         panel_x = (WINDOW_WIDTH - panel_width) // 2
         panel_y = (WINDOW_HEIGHT - panel_height) // 2 + 50
         panel_rect = pygame.Rect(panel_x, panel_y, panel_width, panel_height)
         pygame.draw.rect(screen, DARK_GRAY, panel_rect)
         pygame.draw.rect(screen, WHITE, panel_rect, 3)  # Border
 
+        # Calculate left alignment for all labels (use longest label as reference)
+        label_left_x = (
+            WINDOW_WIDTH // 2 - 100 - self.small_font.size("AI Difficulty:")[0] // 2
+        )
+
         # Draw speed settings
         speed_label = self.small_font.render("Game Speed:", True, WHITE)
         speed_label_rect = speed_label.get_rect(
-            center=(WINDOW_WIDTH // 2 - 100, WINDOW_HEIGHT // 2 - 20)
+            left=label_left_x, centery=WINDOW_HEIGHT // 2 - 20
         )
         screen.blit(speed_label, speed_label_rect)
 
@@ -137,7 +156,7 @@ class Game:
         # Draw AI difficulty settings
         ai_label = self.small_font.render("AI Difficulty:", True, WHITE)
         ai_label_rect = ai_label.get_rect(
-            center=(WINDOW_WIDTH // 2 - 100, WINDOW_HEIGHT // 2 + 50)
+            left=label_left_x, centery=WINDOW_HEIGHT // 2 + 50
         )
         screen.blit(ai_label, ai_label_rect)
 
@@ -154,14 +173,79 @@ class Game:
         )
         screen.blit(ai_controls, ai_controls_rect)
 
+        # Draw Max Score settings
+        max_score_label = self.small_font.render("Max Score:", True, WHITE)
+        max_score_label_rect = max_score_label.get_rect(
+            left=label_left_x, centery=WINDOW_HEIGHT // 2 + 110
+        )
+        screen.blit(max_score_label, max_score_label_rect)
+
+        # Display current input or placeholder
+        display_value = self.max_score_input if self.max_score_input else "10"
+        max_score_value = self.small_font.render(display_value, True, WHITE)
+        max_score_value_rect = max_score_value.get_rect(
+            center=(WINDOW_WIDTH // 2 + 80, WINDOW_HEIGHT // 2 + 110)
+        )
+        screen.blit(max_score_value, max_score_value_rect)
+
+        # Draw max score controls
+        max_score_controls = self.tiny_font.render("Type number (1-50)", True, GRAY)
+        max_score_controls_rect = max_score_controls.get_rect(
+            center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 140)
+        )
+        screen.blit(max_score_controls, max_score_controls_rect)
+
         # Draw start instruction
         start_text = self.small_font.render("Press ENTER to start", True, WHITE)
         start_rect = start_text.get_rect(
-            center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 130)
+            center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 180)
         )
         screen.blit(start_text, start_rect)
 
         pygame.display.flip()
+
+    def draw_game_over(self):
+        """Draw game over screen"""
+        # Draw semi-transparent overlay
+        overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
+        overlay.set_alpha(200)  # Semi-transparent
+        overlay.fill(BLACK)
+        screen.blit(overlay, (0, 0))
+
+        # Draw background panel
+        panel_width = 500
+        panel_height = 300
+        panel_x = (WINDOW_WIDTH - panel_width) // 2
+        panel_y = (WINDOW_HEIGHT - panel_height) // 2
+        panel_rect = pygame.Rect(panel_x, panel_y, panel_width, panel_height)
+        pygame.draw.rect(screen, DARK_GRAY, panel_rect)
+        pygame.draw.rect(screen, WHITE, panel_rect, 3)  # Border
+
+        # Draw win/lose message
+        if self.game_winner == "player":
+            result_text = self.font.render("YOU WIN!", True, WHITE)
+        else:
+            result_text = self.font.render("YOU LOSE", True, WHITE)
+        result_rect = result_text.get_rect(
+            center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 60)
+        )
+        screen.blit(result_text, result_rect)
+
+        # Draw final scores
+        final_score_text = self.small_font.render(
+            f"Final Score: {self.player_score} - {self.ai_score}", True, WHITE
+        )
+        final_score_rect = final_score_text.get_rect(
+            center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 20)
+        )
+        screen.blit(final_score_text, final_score_rect)
+
+        # Draw exit instruction
+        exit_text = self.tiny_font.render("Double-press ESC to exit", True, GRAY)
+        exit_rect = exit_text.get_rect(
+            center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 80)
+        )
+        screen.blit(exit_text, exit_rect)
 
     def draw(self):
         """Draw game elements"""
@@ -181,6 +265,12 @@ class Game:
         ai_text = self.font.render(str(self.ai_score), True, WHITE)
         screen.blit(player_text, (WINDOW_WIDTH // 4, 50))
         screen.blit(ai_text, (3 * WINDOW_WIDTH // 4, 50))
+
+        # Draw game over screen if game is over
+        if self.game_over:
+            self.draw_game_over()
+            pygame.display.flip()
+            return
 
         # Draw pause message if paused
         if self.paused:
@@ -256,9 +346,7 @@ class Game:
             screen.blit(resume_text, resume_rect)
 
             # Draw exit instruction
-            exit_text = self.tiny_font.render(
-                "Double-press ESC to exit", True, GRAY
-            )
+            exit_text = self.tiny_font.render("Double-press ESC to exit", True, GRAY)
             exit_rect = exit_text.get_rect(
                 center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 120)
             )
@@ -280,6 +368,20 @@ class Game:
                             event.key == pygame.K_RETURN
                             or event.key == pygame.K_KP_ENTER
                         ):
+                            # Validate and set max_score before starting
+                            if self.max_score_input:
+                                try:
+                                    score = int(self.max_score_input)
+                                    if 1 <= score <= 50:
+                                        self.max_score = score
+                                    else:
+                                        # If invalid, use default
+                                        self.max_score = 10
+                                except ValueError:
+                                    self.max_score = 10
+                            else:
+                                # Default if no input
+                                self.max_score = 10
                             self.game_started = True
                         elif event.key == pygame.K_UP:
                             self.adjust_speed(0.1)
@@ -287,10 +389,51 @@ class Game:
                             self.adjust_speed(-0.1)
                         elif event.key == pygame.K_a:
                             self.cycle_ai_difficulty()
+                        elif event.key == pygame.K_BACKSPACE:
+                            # Handle backspace to delete last character
+                            if self.max_score_input:
+                                self.max_score_input = self.max_score_input[:-1]
+                        elif event.key in (
+                            pygame.K_0,
+                            pygame.K_1,
+                            pygame.K_2,
+                            pygame.K_3,
+                            pygame.K_4,
+                            pygame.K_5,
+                            pygame.K_6,
+                            pygame.K_7,
+                            pygame.K_8,
+                            pygame.K_9,
+                        ):
+                            # Handle number input (0-9)
+                            digit = event.key - pygame.K_0
+                            new_input = self.max_score_input + str(digit)
+                            # Validate that the new input would be in range (1-50)
+                            try:
+                                test_value = int(new_input)
+                                if 1 <= test_value <= 50:
+                                    self.max_score_input = new_input
+                            except ValueError:
+                                pass  # Ignore invalid input
                     else:
                         # Game controls
                         if event.key == pygame.K_ESCAPE:
-                            if self.paused:
+                            if self.game_over:
+                                # During game over, check for double-press to exit
+                                current_time = pygame.time.get_ticks()
+                                time_since_last_press = (
+                                    current_time - self.last_esc_press_time
+                                )
+                                if (
+                                    self.last_esc_press_time > 0
+                                    and time_since_last_press
+                                    < self.esc_double_press_threshold
+                                ):
+                                    running = False
+                                else:
+                                    # Single press just updates timer
+                                    self.last_esc_press_time = current_time
+                            elif self.paused:
                                 # Check for double-press to exit
                                 current_time = pygame.time.get_ticks()
                                 time_since_last_press = (
@@ -298,7 +441,8 @@ class Game:
                                 )
                                 if (
                                     self.last_esc_press_time > 0
-                                    and time_since_last_press < self.esc_double_press_threshold
+                                    and time_since_last_press
+                                    < self.esc_double_press_threshold
                                 ):
                                     running = False
                                 else:
@@ -324,7 +468,7 @@ class Game:
 
             if self.game_started:
                 self.handle_input()
-                if not self.paused:
+                if not self.paused and not self.game_over:
                     self.update()
                 self.draw()
             else:
